@@ -21,7 +21,7 @@ def getShort(data, index):
 def getUshort(data, index):
   return (data[index] << 8) + data[index + 1]
 
-def readBmp180(addr=DEVICE):
+def get_data(addr=0x77):
   REG_CALIB  = 0xAA
   REG_MEAS   = 0xF4
   REG_MSB    = 0xF6
@@ -88,7 +88,7 @@ def readBmp180(addr=DEVICE):
 def main():
 
   deg = u'\xb0'
-  (temperature,pressure)=readBmp180()
+  (temperature,pressure)=get_data()
   print "Temperatuur : ", temperature,deg.encode('utf8'), "C"
   print "Luchtdruk    : ", pressure, "mbar"
 
