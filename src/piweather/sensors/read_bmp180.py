@@ -85,12 +85,19 @@ def get_data(addr=0x77):
 
   return (temperature/10.0,pressure/ 100.0)
 
-def main():
-
+def get_reading():
   deg = u'\xb0'
   (temperature,pressure)=get_data()
-  print "Temperatuur : ", temperature,deg.encode('utf8'), "C"
-  print "Luchtdruk    : ", pressure, "mbar"
+  print('-'*50)
+  print('BMP180 readings:')
+  print "Temperature = ", temperature,deg.encode('utf8'), "C"
+  print "Air pressure = ", pressure, "hPa"
+  
+def main():
+
+  # For debugging
+  get_reading()
+  
 
 if __name__=="__main__":
    main()
