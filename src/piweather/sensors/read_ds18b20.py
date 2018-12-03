@@ -19,9 +19,10 @@ def get_temperature(sensor):
 	return(temperature)
 	
 def get_all_readings():
+	print('-'*50)
+	print('Looking for DS18B20 sensors ...')
 	sensors = get_sensors()
-	print('Found {} ds18b20 sensor(s):'.format(len(sensors)))
-	
+	print('Found {} sensor(s):'.format(len(sensors)))
 	if len(sensors) > 0:
 		for sensor in sensors:
 			print('Sensor {}: {} C'.format(get_sensor_id(sensor), 
