@@ -7,6 +7,7 @@ import smbus
 import time
 from ctypes import c_short
 import datetime
+import numpy as np
 
 DEVICE = 0x77
 
@@ -60,38 +61,37 @@ def get_data(addr=0x77):
   X1 = ((UT - AC6) * AC5) >> 15
   X2 = (MC << 11) / (X1 + MD)
   B5 = X1 + X2
-  temperature = (B5 + 8) >> 4
+  temperature = int(B5 + 8) >> 4
 
   # Format air pressure
   B6  = B5 - 4000
-  B62 = B6 * B6 >> 12
-  X1  = (B2 * B62) >> 11
-  X2  = AC2 * B6 >> 11
+  B62 = int(B6 * B6) >> 12
+  X1  = int(B2 * B62) >> 11
+  X2  = int(AC2 * B6) >> 11
   X3  = X1 + X2
-  B3  = (((AC1 * 4 + X3) << OVERSAMPLE) + 2) >> 2
+  B3  = int(((AC1 * 4 + X3) << OVERSAMPLE) + 2) >> 2
 
-  X1 = AC3 * B6 >> 13
-  X2 = (B1 * B62) >> 16
-  X3 = ((X1 + X2) + 2) >> 2
-  B4 = (AC4 * (X3 + 32768)) >> 15
-  B7 = (UP - B3) * (50000 >> OVERSAMPLE)
+  X1 = int(AC3 * B6) >> 13
+  X2 = int((B1 * B62)) >> 16
+  X3 = int(((X1 + X2) + 2)) >> 2
+  B4 = int(AC4 * (X3 + 32768)) >> 15
+  B7 = int(UP - B3) * (50000 >> OVERSAMPLE)
 
-  P = (B7 * 2) / B4
+  P = int(B7 * 2) / B4
 
-  X1 = (P >> 8) * (P >> 8)
-  X1 = (X1 * 3038) >> 16
-  X2 = (-7357 * P) >> 16
-  pressure = P + ((X1 + X2 + 3791) >> 4)
+  X1 = (int(P) >> 8) * (int(P) >> 8)
+  X1 = int(X1 * 3038) >> 16
+  X2 = int(-7357 * P) >> 16
+  pressure = P + int((X1 + X2 + 3791) >> 4)
 
-  return (temperature/10.0,pressure/ 100.0)
+  return (np.round(temperature/10.0,1), np.round(pressure/ 100.0, 1))
 
 def get_reading():
-  deg = u'\xb0'
   (temperature,pressure)=get_data()
   print('-'*50)
   print('BMP180 readings on {}:'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
-  print "Temperature = ", temperature,deg.encode('utf8'), "C"
-  print "Air pressure = ", pressure, "hPa"
+  print("Temperature = {} C".format(temperature))
+  print("Air pressure = {} hPa".format(pressure))
   
 def main():
 
