@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
-# BMP180 luchtdruk + temperatuur sensor
-# https://raspberrytips.nl/bmp180/
-# Gebaseerd op een script gemaakt door Matt Hawkins
+# BMP180 air pressure + temperature sensor
+# Based on a script by  Matt Hawkins
 
 import smbus
 import time
 from ctypes import c_short
+import datetime
 
 DEVICE = 0x77
 
@@ -44,25 +44,25 @@ def get_data(addr=0x77):
   MC  = getShort(cal, 18)
   MD  = getShort(cal, 20)
 
-  # Lees Temperatuur
+  # Get temperature
   bus.write_byte_data(addr, REG_MEAS, CRV_TEMP)
   time.sleep(0.005)
   (msb, lsb) = bus.read_i2c_block_data(addr, REG_MSB, 2)
   UT = (msb << 8) + lsb
 
-  # Lees Luchtdruk
+  # Get air pressure
   bus.write_byte_data(addr, REG_MEAS, CRV_PRES + (OVERSAMPLE << 6))
   time.sleep(0.04)
   (msb, lsb, xsb) = bus.read_i2c_block_data(addr, REG_MSB, 3)
   UP = ((msb << 16) + (lsb << 8) + xsb) >> (8 - OVERSAMPLE)
 
-  # Opmaak temperatuur
+  # Format temperature
   X1 = ((UT - AC6) * AC5) >> 15
   X2 = (MC << 11) / (X1 + MD)
   B5 = X1 + X2
   temperature = (B5 + 8) >> 4
 
-  # Opmaak luchtdruk
+  # Format air pressure
   B6  = B5 - 4000
   B62 = B6 * B6 >> 12
   X1  = (B2 * B62) >> 11
@@ -89,7 +89,7 @@ def get_reading():
   deg = u'\xb0'
   (temperature,pressure)=get_data()
   print('-'*50)
-  print('BMP180 readings:')
+  print('BMP180 readings on {}:'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
   print "Temperature = ", temperature,deg.encode('utf8'), "C"
   print "Air pressure = ", pressure, "hPa"
   
