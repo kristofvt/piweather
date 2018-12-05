@@ -2,10 +2,11 @@
 
 import sys,os, glob
 import numpy as np
+import datetime
 
 def get_sensors(address='/sys/bus/w1/devices'):
 	return glob.glob(os.path.join(address, '28*', 'w1_slave'))
-	
+
 def get_sensor_id(sensor):
 	return os.path.basename(os.path.dirname(sensor))
 
@@ -17,12 +18,13 @@ def get_temperature(sensor):
 	tdata = secondline.split(" ")[9]
 	temperature = np.round(float(tdata[2:])/1000.,1)
 	return(temperature)
-	
+
 def get_all_readings():
 	print('-'*50)
 	print('Looking for DS18B20 sensors ...')
 	sensors = get_sensors()
 	print('Found {} sensor(s):'.format(len(sensors)))
+	print('Readings on {}:'.format(datetime.datetime.now().strftime('%Y-%m-%D %H:%M:%S')))
 	if len(sensors) > 0:
 		for sensor in sensors:
 			print('Sensor {}: {} C'.format(get_sensor_id(sensor), 
