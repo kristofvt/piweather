@@ -22,3 +22,4 @@
 # m h  dom mon dow   command
 
 */5 * * * * /usr/bin/python3.5 /home/pi/piweather/src/piweather/weerturnhout/sendBMP180.py >> /home/pi/logs/weerturnhout/sendBMP180.log
+*/1 * * * * /usr/bin/python3.5 /home/pi/piweather/src/piweather/weerturnhout/sendTemperatureData.py >> /home/pi/logs/weerturnhout/sendTemperatureData.log
