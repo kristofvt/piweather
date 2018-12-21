@@ -24,7 +24,7 @@ def get_all_readings():
 	print('Looking for DS18B20 sensors ...')
 	sensors = get_sensors()
 	print('Found {} sensor(s):'.format(len(sensors)))
-	print('Readings on {}:'.format(datetime.datetime.now().strftime('%Y-%m-%D %H:%M:%S')))
+	print('Readings on {}:'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 	if len(sensors) > 0:
 		for sensor in sensors:
 			print('Sensor {}: {} C'.format(get_sensor_id(sensor), 
