@@ -7,7 +7,7 @@ import smbus
 import time
 from ctypes import c_short
 import datetime
-import numpy as np
+#import numpy as np
 
 DEVICE = 0x77
 
@@ -84,7 +84,7 @@ def get_data(addr=0x77):
   X2 = int(-7357 * P) >> 16
   pressure = P + int((X1 + X2 + 3791) >> 4)
 
-  return (np.round(temperature/10.0,1), np.round(pressure/ 100.0, 1))
+  return (round(temperature/10.0,1), round(pressure/ 100.0, 1))
 
 def get_reading():
   (temperature,pressure)=get_data()

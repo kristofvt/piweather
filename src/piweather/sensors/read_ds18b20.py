@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys,os, glob
-import numpy as np
+#import numpy as np
 import datetime
 
 def get_sensors(address='/sys/bus/w1/devices'):
@@ -16,7 +16,7 @@ def get_temperature(sensor):
 	tfile.close()
 	secondline = text.split("\n")[1]
 	tdata = secondline.split(" ")[9]
-	temperature = np.round(float(tdata[2:])/1000.,1)
+	temperature = round(float(tdata[2:])/1000.,1)
 	return(temperature)
 
 def get_all_readings():
