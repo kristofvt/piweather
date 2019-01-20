@@ -17,8 +17,8 @@ def main():
 	rh, t = get_reading()
 	print('-'*50)
 	print('Readings on {} for DHT-22'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
-	print('RH = {}%'.format(np.round(rh,1)))
-	print('Temperature = {} C'.format(np.round(t, 1)))
+	print('RH = {}%'.format(round(rh,1)))
+	print('Temperature = {} C'.format(round(t, 1)))
 
 if __name__=="__main__":
 	main()
