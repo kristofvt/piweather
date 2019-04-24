@@ -47,6 +47,8 @@ def download_data(dir):
     # Get the latest radar file
     file = files[-1]
 
+    print('Downloading remote file: {}'.format(file))
+
     # Download the file
     if os.path.exists(os.path.join(dir, 'radar.h5')): os.remove(
         os.path.join(dir, 'radar.h5'))
