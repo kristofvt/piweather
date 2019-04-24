@@ -12,12 +12,25 @@ import subprocess
 import rasterio
 
 def download_data(dir):
-
     # Get current time and convert to proper format
     currentTime = datetime.datetime.now()
     currentYear = currentTime.strftime('%Y')
     currentMonth = currentTime.strftime('%m')
     currentDay = currentTime.strftime('%d')
+
+    # Convert time to local timezone
+    startTime = file.split('_')[-1][0:4]
+    from_zone = tz.tzutc()
+    to_zone = tz.tzlocal()
+
+    utc = datetime.datetime(int(currentYear), int(currentMonth), int(currentDay), int(startTime[0:2]),
+                            int(startTime[2:4]))
+    utc = utc.replace(tzinfo=from_zone)
+
+    # Convert time zone
+    localTime = utc.astimezone(to_zone)
+
+    print('Retrieved base time: {}'.format(localTime))
 
     # FTP connection
     print('Connecting to data.knmi.nl')
