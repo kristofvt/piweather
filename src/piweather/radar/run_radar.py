@@ -178,7 +178,7 @@ def upload_images(images):
     for image in images:
         print(image)
         f = open(image, 'rb')
-        ftps.storbinary('STOR {}'.format(image), f)
+        ftps.storbinary('STOR {}'.format(os.path.basename(image)), f)
         f.close()
     print('All files uploaded to server ...')
     ftps.quit()
