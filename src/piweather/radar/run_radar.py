@@ -8,7 +8,6 @@ import os
 import datetime
 import urllib
 from dateutil import tz
-#import pandas as pd
 import subprocess
 import rasterio
 
@@ -39,7 +38,7 @@ def download_data(dir):
 
     print('Radar data downloaded')
 
-    return os.path.join(dir, 'radar.h5')
+    return os.path.join(dir, 'radar.h5'), file
 
 def read_radar_data(file):
 
@@ -67,15 +66,6 @@ def get_base_time(file):
     currentYear = currentTime.strftime('%Y')
     currentMonth = currentTime.strftime('%m')
     currentDay = currentTime.strftime('%d')
-
-    # Open the radar file
-    f = h5py.File(file, 'r+')
-
-    print('Extracting base time information ...')
-
-    # Read the starttime of the radar file
-    productStart = str(f['overview'].attrs['product_datetime_start'])
-    productStart_datetime = pd.to_datetime(productStart.split("'")[1])
 
     # Convert time to local timezone
     startTime = file.split('_')[-1][0:4]
@@ -158,13 +148,13 @@ def main():
     outTif = os.path.join(radar_dir, 'radar_data.tif')
 
     # Download radar data
-    radar_file = download_data(radar_dir)
+    radar_file, file = download_data(radar_dir)
 
     # Extract the data
     radar_data = read_radar_data(radar_file)
 
     # Get base time
-    localTime = get_base_time(radar_file)
+    localTime = get_base_time(file)
 
     # Get projection
     transform, crs = get_projection_transform(radar_file)
