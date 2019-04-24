@@ -4,7 +4,7 @@ import numpy as np
 #import pyproj
 #import shapely.geometry
 from ftplib import FTP
-import os
+import os, glob
 import datetime
 import urllib
 from dateutil import tz
@@ -142,6 +142,28 @@ def toPNG(infile, outPattern, base_time, colorRamp):
                                                                                     os.path.dirname(infile) + outPattern + currentTime + '.png'),
                         shell=True)
 
+def upload_images(images):
+
+    print('Connecting to weerturnhout.be over FTP ...')
+    from ftplib import FTP
+    ftps = FTP('web0110.zxcs.be')
+    ftps.login('u44514p39920', 'xuQKHsXc')
+    ftps.cwd('/domains/weerturnhout.be/public_html/radar')
+    contents = ftps.nlst()
+    for f in contents:
+        if os.path.splitext(f)[1] == '.png' and f.startswith('radar'):
+            print('Deleting old file: {}'.format(f))
+            ftps.delete(f)
+
+    print('Uploading new files ...')
+    for image in images:
+        print(image)
+        f = open(image, 'rb')
+        ftps.storbinary('STOR {}'.format(image), f)
+        f.close()
+    print('All files uploaded to server ...')
+    ftps.quit()
+
 def main():
 
     radar_dir = '/home/pi/radar'
@@ -168,8 +190,11 @@ def main():
 
     # Export to PNGs
     colorRamp = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'radarcolors.txt')
-
     toPNG(projectedTif, 'radardataEPSG4326_', localTime, colorRamp)
+
+    # Upload to server
+    images = glob.glob(os.path.join(radar_dir, 'radar*.png'))
+    upload_images(images)
 
 if __name__=="__main__":
    main()
