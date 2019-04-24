@@ -18,10 +18,10 @@ def download_data(dir):
     currentMonth = currentTime.strftime('%m')
     currentDay = currentTime.strftime('%d')
 
-    # Convert time to local timezone
-    startTime = file.split('_')[-1][0:4]
-    from_zone = tz.tzutc()
-    to_zone = tz.tzlocal()
+    # Convert time to UTC timezone
+    startTime = currentTime.strftime('%H%M')
+    from_zone = tz.tzlocal()
+    to_zone = tz.tzutc()
 
     utc = datetime.datetime(int(currentYear), int(currentMonth), int(currentDay), int(startTime[0:2]),
                             int(startTime[2:4]))
@@ -30,7 +30,11 @@ def download_data(dir):
     # Convert time zone
     localTime = utc.astimezone(to_zone)
 
-    print('Retrieved base time: {}'.format(localTime))
+    print('Retrieved UTC time: {}'.format(localTime))
+
+    currentYear = localTime.strftime('%Y')
+    currentMonth = localTime.strftime('%m')
+    currentDay = localTime.strftime('%d')
 
     # FTP connection
     print('Connecting to data.knmi.nl')
