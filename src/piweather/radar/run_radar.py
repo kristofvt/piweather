@@ -158,7 +158,7 @@ def toPNG(infile, outPattern, base_time, colorRamp):
         subprocess.call('gdaldem color-relief -of png -b {} -alpha {} {} {}'.format(str(band + 1),
                                                                                     infile,
                                                                                     colorRamp,
-                                                                                    os.path.dirname(infile) + outPattern + currentTime + '.png'),
+                                                                                    os.path.join(os.path.dirname(infile), outPattern + currentTime + '.png')),
                         shell=True)
 
 def upload_images(images):
