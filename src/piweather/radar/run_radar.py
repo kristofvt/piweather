@@ -1,14 +1,14 @@
 import h5py
 import numpy as np
-from matplotlib import pyplot as plt
-import pyproj
-import shapely.geometry
+#from matplotlib import pyplot as plt
+#import pyproj
+#import shapely.geometry
 from ftplib import FTP
 import os
 import datetime
 import urllib
 from dateutil import tz
-import pandas as pd
+#import pandas as pd
 import subprocess
 import rasterio
 
@@ -39,7 +39,7 @@ def download_data(dir):
 
     print('Radar data downloaded')
 
-    return os.path.exists(os.path.join(dir, 'radar.h5'))
+    return os.path.join(dir, 'radar.h5')
 
 def read_radar_data(file):
 
