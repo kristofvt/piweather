@@ -352,7 +352,11 @@ if __name__=="__main__":
 
 
 
-
+######### TO CREATE THE COLORBAR
+# cb.set_ticks([10. , 17.5, 25. , 32.5, 40. , 47.5, 55. , 58.75], update_ticks=True)
+# tick_labels = ['0.15', '0.5', '1.5', '5', '12', '35', '100', 'Hagel']
+# cb.set_ticklabels(tick_labels, update_ticks=True)
+# cb.set_label('Neerslag intensiteit (mm/h)', color='white', fontsize=24, labelpad=10)
 
 
 
