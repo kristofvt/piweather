@@ -308,7 +308,12 @@ def upload_images(images):
     for f in contents:
         if os.path.splitext(f)[1] == '.png' and f.startswith('radar'):
             print('Moving old file to archive: {}'.format(f))
-            ftps.rename(f, 'archive/' + f)
+            try:
+                ftps.delete('archive/' + f)
+            except: pass
+            try:
+                ftps.rename(f, 'archive/' + f)
+            except: pass
 
     print('Uploading new files ...')
     for image in images:
