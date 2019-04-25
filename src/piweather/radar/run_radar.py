@@ -294,12 +294,21 @@ def upload_images(images):
     from ftplib import FTP
     ftps = FTP('web0110.zxcs.be')
     ftps.login('u44514p39920', 'xuQKHsXc')
+
+    print('Check if archive needs to be cleaned ...')
+    ftps.cwd('/domains/weerturnhout.be/public_html/radar/archive')
+    contents = ftps.nlst()
+    if len(contents) > 500:
+        print('Cleaning archive ...')
+        for f in contents:
+            if f.endswith('.png'):ftps.delete(f)
+
     ftps.cwd('/domains/weerturnhout.be/public_html/radar')
     contents = ftps.nlst()
     for f in contents:
         if os.path.splitext(f)[1] == '.png' and f.startswith('radar'):
-            print('Deleting old file: {}'.format(f))
-            ftps.delete(f)
+            print('Moving old file to archive: {}'.format(f))
+            ftps.rename(f, 'archive/' + f)
 
     print('Uploading new files ...')
     for image in images:
