@@ -345,150 +345,80 @@ def main():
     images = glob.glob(os.path.join(radar_dir, 'radar*.png'))
     upload_images(images)
 
+def plotColorbar():
+    print('Creating color palette')
+
+    ##### Create the color palette
+    def interpolColors(color1, color2):
+        R = np.linspace(color1[0], color2[0], 100)
+        G = np.linspace(color1[1], color2[1], 100)
+        B = np.linspace(color1[2], color2[2], 100)
+        return R, G, B
+
+    start_light = [193, 212, 242]
+    start_dark = [135, 159, 198]
+    startInterpol = interpolColors(start_light, start_dark)
+
+    blue_light = [93, 162, 240]
+    blue_dark = [31, 96, 171]
+    blueInterpol = interpolColors(blue_light, blue_dark)
+
+    green_light = [46, 255, 46]
+    green_dark = [1, 81, 12]
+    greenInterpol = interpolColors(green_light, green_dark)
+
+    yellow_light = [255, 247, 0]
+    yellow_dark = [255, 131, 0]
+    yellowInterpol = interpolColors(yellow_light, yellow_dark)
+
+    red_light = [255, 0, 0]
+    red_dark = [104, 3, 3]
+    redInterpol = interpolColors(red_light, red_dark)
+
+    purple_light = [243, 14, 243]
+    purple_dark = [97, 3, 104]
+    purpleInterpol = interpolColors(purple_light, purple_dark)
+
+    grey_light = [255, 255, 255]
+    grey_dark = [156, 156, 156]
+    greyInterpol = interpolColors(grey_light, grey_dark)
+
+    finalColors = np.empty((0, 3))
+    finalColors = np.concatenate((finalColors, np.array(startInterpol).transpose()), axis=0)
+    finalColors = np.concatenate((finalColors, np.array(blueInterpol).transpose()), axis=0)
+    finalColors = np.concatenate((finalColors, np.array(greenInterpol).transpose()), axis=0)
+    finalColors = np.concatenate((finalColors, np.array(yellowInterpol).transpose()), axis=0)
+    finalColors = np.concatenate((finalColors, np.array(redInterpol).transpose()), axis=0)
+    finalColors = np.concatenate((finalColors, np.array(purpleInterpol).transpose()), axis=0)
+    finalColors = np.concatenate((finalColors, np.array(greyInterpol).transpose()), axis=0)
+    finalColors = finalColors / 255.
+
+    from matplotlib import pyplot as plt
+    import matplotlib as mpl
+    fig = plt.figure(figsize=(25, 20))
+    fig.patch.set_facecolor('black')
+    ax = plt.gca()
+    ax.spines['bottom'].set_color('white')
+    ax.spines['top'].set_color('white')
+    ax.spines['right'].set_color('white')
+    ax.spines['left'].set_color('white')
+
+    customColors = mpl.colors.ListedColormap(finalColors)
+    plt.pcolor(np.zeros((10, 10)), vmin=10, vmax=80, cmap=customColors)
+
+    cb = plt.colorbar(aspect=40)
+    cbytick_obj = plt.getp(cb.ax.axes, 'yticklabels')
+    plt.setp(cbytick_obj, color='white', fontsize=24)
+    cb.set_ticks([10, 20, 30, 40, 50, 60, 70, 77], update_ticks=True)
+    tick_labels = ['0.1', '1', '5', '10', '20', '50', '100', 'Hagel']
+    cb.set_ticklabels(tick_labels, update_ticks=True)
+    cb.set_label('Neerslag intensiteit (mm/h)', color='white', fontsize=24, labelpad=10)
+
 if __name__=="__main__":
    main()
 
 
+#### LOOKUPTABLE FOR RADAR VALUES AND RAINFALL RATES
 
-
-
-######### TO CREATE THE COLORBAR
-# cb.set_ticks([10. , 17.5, 25. , 32.5, 40. , 47.5, 55. , 58.75], update_ticks=True)
-# tick_labels = ['0.15', '0.5', '1.5', '5', '12', '35', '100', 'Hagel']
-# cb.set_ticklabels(tick_labels, update_ticks=True)
-# cb.set_label('Neerslag intensiteit (mm/h)', color='white', fontsize=24, labelpad=10)
-
-
-
-
-
-
-
-#
-#
-#
-# for t in range(25):
-#     print('Image: {}/25'.format(t+1))
-#
-#     currentTime = (localTime + datetime.timedelta(minutes=5*t)).strftime('%H:%M')
-#
-#     fig = plt.figure(figsize=(25,20))
-#     fig.patch.set_facecolor('black')
-#     ax = plt.gca()
-#     ax.spines['bottom'].set_color('white')
-#     ax.spines['top'].set_color('white')
-#     ax.spines['right'].set_color('white')
-#     ax.spines['left'].set_color('white')
-#
-#     m = Basemap(llcrnrlon=x_min+1.5, llcrnrlat=y_min+0.2, urcrnrlon=x_max-1.5, urcrnrlat=y_max-1,
-#                 resolution='h', projection='tmerc', lon_0=3., lat_0=51.5)
-#     m.drawcoastlines(linewidth=1, linestyle='solid', color='white')
-#     m.drawcountries(linewidth=1, linestyle='solid', color='white', antialiased=1, ax=None, zorder=None)
-#
-#     data = np.array(f['image'+str(t+1)]['image_data'])
-#     masked_data = np.ma.masked_where(data == 0, data)
-#     masked_data = 0.5 * masked_data -32
-#
-#     # plt.imshow(images[t], cmap=cm)
-#     # plt.pause(0.05)
-#     # m.pcolor(xNew, yNew, masked_data, vmin=cRange[0], vmax=cRange[1], latlon=True)
-#
-#     customColors = mpl.colors.ListedColormap(finalColors)
-#     m.pcolor(xNew, yNew, masked_data, vmin=10, vmax=80, cmap=customColors, latlon=True)
-#     # plt.pcolor(masked_data, vmin=10, vmax=80, cmap=customColors)
-#     cb = plt.colorbar(aspect=40)
-#     cbytick_obj = plt.getp(cb.ax.axes, 'yticklabels')
-#     plt.setp(cbytick_obj, color='white', fontsize=24)
-#     cb.set_ticks(np.arange(10,81,10), update_ticks=True)
-#     cb.set_label('Radar intensiteit (dBz)', color='white', fontsize=24, labelpad=20)
-#
-#     plt.title(currentTime, fontsize = 30, y=1.02, color='white')
-#     plt.tight_layout()
-#     plt.savefig(os.path.join(r'C:\Users\vtrichtk\Downloads\temp', str(t) + '.png'), bbox_inches='tight', facecolor=fig.get_facecolor())
-#     plt.close()
-#
-# print('All images generated')
-# print('Assembling to animated GIF')
-#
-#
-# print('Connecting to ftp.weerturnhout.be')
-# from ftplib import FTP
-# ftps = FTP('ftp.weerturnhout.be')
-# ftps.login('ftpweerturn', 'cpbmhl.nzuveaosx5jidfyJwg')
-# file = open(r'C:\Users\vtrichtk\Downloads\temp\radar.gif', 'rb')
-# print('Uploading GIF')
-# ftps.storbinary('STOR /ftpweerturn/weerturnhout.be/wwwroot/radar.gif', file)     # send the file
-# file.close()                                    # close file and FTP
-# ftps.quit()
-# print('GIF uploaded')
-# print('All done!')
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-# # subprocess.call('gdal_translate -of png {} {}'.format(r'C:\Users\vtrichtk\Desktop\temp\testEPSG4326Colored.tif',
-# #                                                       r'C:\Users\vtrichtk\Desktop\temp\testEPSG4326_3.png'
-# #                                                       ), shell=True)
-#
-#
-
-
-
-
-
-
-
-# print('Creating color palette')
-# ##### Create the color palette
-# def interpolColors(color1, color2):
-#     R = np.linspace(color1[0], color2[0], 100)
-#     G = np.linspace(color1[1], color2[1], 100)
-#     B = np.linspace(color1[2], color2[2], 100)
-#     return R, G, B
-#
-#
-# start_light = [193, 212, 242]
-# start_dark = [135, 159, 198]
-# startInterpol = interpolColors(start_light, start_dark)
-#
-# blue_light = [93, 162, 240]
-# blue_dark = [31, 96, 171]
-# blueInterpol = interpolColors(blue_light, blue_dark)
-#
-# green_light = [46, 255, 46]
-# green_dark = [1, 81, 12]
-# greenInterpol = interpolColors(green_light, green_dark)
-#
-# yellow_light = [255, 247,0]
-# yellow_dark = [255, 131, 0]
-# yellowInterpol = interpolColors(yellow_light, yellow_dark)
-#
-# red_light = [255, 0, 0]
-# red_dark = [104, 3, 3]
-# redInterpol = interpolColors(red_light, red_dark)
-#
-# purple_light = [243, 14, 243]
-# purple_dark = [97, 3, 104]
-# purpleInterpol = interpolColors(purple_light, purple_dark)
-#
-# grey_light = [255, 255, 255]
-# grey_dark = [156, 156, 156]
-# greyInterpol = interpolColors(grey_light, grey_dark)
-#
-# finalColors = np.empty((0, 3))
-# finalColors = np.concatenate((finalColors, np.array(startInterpol).transpose()), axis=0)
-# finalColors = np.concatenate((finalColors, np.array(blueInterpol).transpose()), axis=0)
-# finalColors = np.concatenate((finalColors, np.array(greenInterpol).transpose()), axis=0)
-# finalColors = np.concatenate((finalColors, np.array(yellowInterpol).transpose()), axis=0)
-# finalColors = np.concatenate((finalColors, np.array(redInterpol).transpose()), axis=0)
-# finalColors = np.concatenate((finalColors, np.array(purpleInterpol).transpose()), axis=0)
-# finalColors = np.concatenate((finalColors, np.array(greyInterpol).transpose()), axis=0)
-# finalColors = finalColors/255.
-#
-# print('Color palette created')
+# RADAR BREAKPOINTS: 10,23,34,39,44,50,55
+# RAINFALL BREAKPOINTS: 0.1, 1, 5, 10, 20, 50, 100
