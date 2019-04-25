@@ -144,7 +144,7 @@ def read_radar_data_forecast(file):
     print('Rescaling data ...')
     data[data == 255] = 0
     data = 0.5 * data - 32
-    data[data < 0] = 0
+    data[data < 10] = 0
     data = data.astype(np.uint8)
 
     return data
@@ -224,6 +224,8 @@ def write2tif(data, file, transform, crs):
 
     print('Writing to TIF file ...')
 
+    if os.path.exists(file): os.remove(file)
+
     with rasterio.open(file, 'w', driver='GTiff',
                        height=data.shape[0], width=data.shape[1],
                        count=data.shape[2], dtype=rasterio.uint8,
@@ -233,11 +235,17 @@ def write2tif(data, file, transform, crs):
 
 def reproject(infile, outfile):
 
+    if os.path.exists(outfile): os.remove(outfile)
+
     print('Reprojecting to WGS84 ...')
     subprocess.call(
         'gdalwarp -t_srs EPSG:4326 -r BILINEAR {} {}'.format(infile,outfile), shell=True)
 
 def toPNG(infile, outPattern, base_time, colorRamp):
+
+    print('Removing old file ...')
+    images = glob.glob(os.path.join(os.path.dirname(infile), 'radar*.png'))
+    for f in images: os.remove(f)
 
     print('Converting to PNGs ...')
     with rasterio.open(infile) as src: bands = src.count
@@ -249,6 +257,10 @@ def toPNG(infile, outPattern, base_time, colorRamp):
                                                                                     colorRamp,
                                                                                     os.path.join(os.path.dirname(infile), outPattern + currentTime + '.png')),
                         shell=True)
+
+    aux_files = glob.glob(os.path.join(os.path.dirname(infile), 'radar*.xml'))
+    for f in aux_files: os.remove(f)
+
 
 def upload_images(images):
 
