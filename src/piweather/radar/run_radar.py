@@ -295,28 +295,22 @@ def upload_images(images):
     ftps = FTP('web0110.zxcs.be')
     ftps.login('u44514p39920', 'xuQKHsXc')
 
-    print('Check if archive needs to be cleaned ...')
-    ftps.cwd('/domains/weerturnhout.be/public_html/radar/archive')
+    print('Check if folder needs to be cleaned ...')
+    ftps.cwd('/domains/weerturnhout.be/public_html/radar/')
     contents = ftps.nlst()
+    contents = list(sorted(contents))
     if len(contents) > 500:
         print('Cleaning archive ...')
-        for f in contents:
-            if f.endswith('.png'):ftps.delete(f)
-
-    ftps.cwd('/domains/weerturnhout.be/public_html/radar')
-    contents = ftps.nlst()
-    for f in contents:
-        if os.path.splitext(f)[1] == '.png' and f.startswith('radar'):
-            print('Moving old file to archive: {}'.format(f))
-            try:
-                ftps.delete('archive/' + f)
-            except: pass
-            try:
-                ftps.rename(f, 'archive/' + f)
-            except: pass
+        for f in contents[0:15]:
+            if (f.startswith('radardataEPSG4326')) & (f.endswith('.png')):
+                ftps.delete(f)
+                print('Deleted: {}'.format(f))
 
     print('Uploading new files ...')
     for image in images:
+        try:
+            ftps.delete(os.path.basename(image))
+        except: pass
         print(image)
         f = open(image, 'rb')
         ftps.storbinary('STOR {}'.format(os.path.basename(image)), f)
