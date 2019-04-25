@@ -11,7 +11,7 @@ from dateutil import tz
 import subprocess
 import rasterio
 
-def download_data(dir):
+def download_data_forecast(dir):
     # Get current time and convert to proper format
     currentTime = datetime.datetime.now()
     currentYear = currentTime.strftime('%Y')
@@ -59,7 +59,78 @@ def download_data(dir):
 
     return os.path.join(dir, 'radar.h5'), file
 
-def read_radar_data(file):
+def download_data_pasthour(dir):
+
+    # Clean up directory
+    oldFiles = glob.glob(os.path.join(dir, '*.h5'))
+    for f in oldFiles: os.remove(f)
+
+    # Get current time and convert to proper format
+    currentTime = datetime.datetime.now()
+    currentYear = currentTime.strftime('%Y')
+    currentMonth = currentTime.strftime('%m')
+    currentDay = currentTime.strftime('%d')
+
+    # Convert time to UTC timezone
+    startTime = currentTime.strftime('%H%M')
+    from_zone = tz.tzlocal()
+    to_zone = tz.tzutc()
+
+    utc = datetime.datetime(int(currentYear), int(currentMonth), int(currentDay), int(startTime[0:2]),
+                            int(startTime[2:4]))
+    utc = utc.replace(tzinfo=from_zone)
+
+    # Convert time zone
+    localTime = utc.astimezone(to_zone)
+
+    print('Retrieved UTC time: {}'.format(localTime))
+
+    currentYear = localTime.strftime('%Y')
+    currentMonth = localTime.strftime('%m')
+    currentDay = localTime.strftime('%d')
+
+    # FTP connection
+    print('Connecting to data.knmi.nl')
+    ftp = FTP('data.knmi.nl')
+    ftp.login()
+    print('Downloading radar data ...')
+    ftp.cwd('/download/radar_reflectivity_composites/2.0/noversion/' + currentYear + '/' + currentMonth + '/' + currentDay)
+    files = sorted(ftp.nlst())
+
+    # Get the most recent file
+    newestFile = files[-1]
+
+    # Get the time of the most recent file
+    newestFileTime = datetime.datetime(int(currentYear), int(currentMonth), int(currentDay),
+                                       int(newestFile.split('_')[4][0:2]),  int(newestFile.split('_')[4][2:4]))
+
+    # Construct a datelist for the past hour
+    date_list = list(reversed([newestFileTime - datetime.timedelta(minutes=x) for x in range(0, 65, 5)]))
+
+    # Back to root dir
+    ftp.cwd('/download/radar_reflectivity_composites/2.0/noversion/')
+
+    # Download the appropriate files
+    files = []
+    for date in date_list:
+        year = date.strftime('%Y')
+        month = date.strftime('%m')
+        day = date.strftime('%d')
+        hour = date.strftime('%H')
+        minutes = date.strftime('%M')
+        remoteFile = year + '/' + month + '/' + day + '/' + 'RAD_NL25_PCP_NA_' + hour + minutes + '.h5'
+
+        print('Downloading remote file: {}'.format(remoteFile))
+        with open(os.path.join(dir, os.path.basename(remoteFile)), 'wb') as f:
+            ftp.retrbinary("RETR " + remoteFile, f.write)
+
+        files.append(os.path.basename(remoteFile))
+
+    print('Radar data downloaded')
+
+    return files
+
+def read_radar_data_forecast(file):
 
     # Open the radar file
     f = h5py.File(file, 'r+')
@@ -69,6 +140,24 @@ def read_radar_data(file):
     data = np.zeros((765, 700, 13), dtype=np.uint8)
     for t in range(13):
         data[:, :, t] = np.array(f['image' + str(t + 1)]['image_data'])
+
+    print('Rescaling data ...')
+    data[data == 255] = 0
+    data = 0.5 * data - 32
+    data[data < 0] = 0
+    data = data.astype(np.uint8)
+
+    return data
+
+def read_radar_data_pasthour(dir, files):
+
+    print('Reading data from hdf5 file ...')
+
+    data = np.zeros((765, 700, 13), dtype=np.uint8)
+    for t in range(13):
+        # Open the radar file
+        f = h5py.File(os.path.join(dir, files[t]), 'r+')
+        data[:, :, t] = np.array(f['image1']['image_data'])
 
     print('Rescaling data ...')
     data[data == 255] = 0
@@ -137,7 +226,7 @@ def write2tif(data, file, transform, crs):
 
     with rasterio.open(file, 'w', driver='GTiff',
                        height=data.shape[0], width=data.shape[1],
-                       count=data.shape[2], dtype=data.dtype,
+                       count=data.shape[2], dtype=rasterio.uint8,
                        crs=crs.astype(str), transform=transform, nodata=0) as dst:
         for band in range(data.shape[2]):
             dst.write(data[:, :, band], band + 1)
@@ -189,16 +278,16 @@ def main():
     outTif = os.path.join(radar_dir, 'radar_data.tif')
 
     # Download radar data
-    radar_file, file = download_data(radar_dir)
+    radar_files = download_data_pasthour(radar_dir)
 
     # Extract the data
-    radar_data = read_radar_data(radar_file)
+    radar_data = read_radar_data_pasthour(radar_dir, radar_files)
 
     # Get base time
-    localTime = get_base_time(file)
+    localTime = get_base_time(radar_files[0])
 
     # Get projection
-    transform, crs = get_projection_transform(radar_file)
+    transform, crs = get_projection_transform(os.path.join(radar_dir, radar_files[0]))
 
     # Write 2 tif
     write2tif(radar_data, outTif, transform, crs)
