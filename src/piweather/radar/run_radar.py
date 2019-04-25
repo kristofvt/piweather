@@ -50,19 +50,19 @@ def download_data_forecast(dir):
     print('Downloading remote file: {}'.format(file))
 
     # Download the file
-    if os.path.exists(os.path.join(dir, 'radar.h5')): os.remove(
-        os.path.join(dir, 'radar.h5'))
-    with open(os.path.join(dir, 'radar.h5'), 'wb') as f:
+    if os.path.exists(os.path.join(dir, file)): os.remove(
+        os.path.join(dir, file))
+    with open(os.path.join(dir, file), 'wb') as f:
         ftp.retrbinary("RETR " + file, f.write)
 
     print('Radar data downloaded')
 
-    return os.path.join(dir, 'radar.h5'), file
+    return os.path.join(dir, file)
 
 def download_data_pasthour(dir):
 
     # Clean up directory
-    oldFiles = glob.glob(os.path.join(dir, '*.h5'))
+    oldFiles = glob.glob(os.path.join(dir, '*NA*.h5'))
     for f in oldFiles: os.remove(f)
 
     # Get current time and convert to proper format
@@ -158,6 +158,32 @@ def read_radar_data_pasthour(dir, files):
         # Open the radar file
         f = h5py.File(os.path.join(dir, files[t]), 'r+')
         data[:, :, t] = np.array(f['image1']['image_data'])
+
+    print('Rescaling data ...')
+    data[data == 255] = 0
+    data = 0.5 * data - 32
+    data[data < 0] = 0
+    data = data.astype(np.uint8)
+
+    return data
+
+
+def read_radar_data_combined(dir, pasthour_files, forecast_file):
+
+    print('Reading data from hdf5 file ...')
+
+    # Past hour data
+    data = np.zeros((765, 700, 19), dtype=np.uint8)
+    for t in range(13):
+        # Open the radar file
+        f = h5py.File(os.path.join(dir, pasthour_files[t]), 'r+')
+        data[:, :, t] = np.array(f['image1']['image_data'])
+
+    # Forecast data
+    # Open the radar file
+    f = h5py.File(forecast_file, 'r+')
+    for t in range(6):
+        data[:, :, t+13] = np.array(f['image' + str(t+2)]['image_data']) # First image discarded
 
     print('Rescaling data ...')
     data[data == 255] = 0
@@ -289,11 +315,14 @@ def main():
     radar_dir = '/home/pi/radar'
     outTif = os.path.join(radar_dir, 'radar_data.tif')
 
-    # Download radar data
+    # Download forecast radar data
+    forecast_file = download_data_forecast(radar_dir)
+
+    # Download past hour radar data
     radar_files = download_data_pasthour(radar_dir)
 
     # Extract the data
-    radar_data = read_radar_data_pasthour(radar_dir, radar_files)
+    radar_data = read_radar_data_combined(radar_dir, radar_files, forecast_file)
 
     # Get base time
     localTime = get_base_time(radar_files[0])
