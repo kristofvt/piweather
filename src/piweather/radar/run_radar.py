@@ -50,8 +50,8 @@ def download_data_forecast(dir):
     print('Downloading remote file: {}'.format(file))
 
     # Download the file
-    if os.path.exists(os.path.join(dir, file)): os.remove(
-        os.path.join(dir, file))
+    oldFiles = glob.glob(os.path.join(dir, '*h5'))
+    for f in oldFiles: os.remove(f)
     with open(os.path.join(dir, file), 'wb') as f:
         ftp.retrbinary("RETR " + file, f.write)
 
