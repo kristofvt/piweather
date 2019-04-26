@@ -28,13 +28,13 @@ def download_data_forecast(dir):
     utc = utc.replace(tzinfo=from_zone)
 
     # Convert time zone
-    localTime = utc.astimezone(to_zone)
+    utcTime = utc.astimezone(to_zone)
 
-    print('Retrieved UTC time: {}'.format(localTime))
+    print('Retrieved UTC time: {}'.format(utcTime))
 
-    currentYear = localTime.strftime('%Y')
-    currentMonth = localTime.strftime('%m')
-    currentDay = localTime.strftime('%d')
+    currentYear = utcTime.strftime('%Y')
+    currentMonth = utcTime.strftime('%m')
+    currentDay = utcTime.strftime('%d')
 
     # FTP connection
     print('Connecting to data.knmi.nl')
@@ -81,13 +81,13 @@ def download_data_pasthour(dir):
     utc = utc.replace(tzinfo=from_zone)
 
     # Convert time zone
-    localTime = utc.astimezone(to_zone)
+    utcTime = utc.astimezone(to_zone)
 
-    print('Retrieved UTC time: {}'.format(localTime))
+    print('Retrieved UTC time: {}'.format(utcTime))
 
-    currentYear = localTime.strftime('%Y')
-    currentMonth = localTime.strftime('%m')
-    currentDay = localTime.strftime('%d')
+    currentYear = utcTime.strftime('%Y')
+    currentMonth = utcTime.strftime('%m')
+    currentDay = utcTime.strftime('%d')
 
     # FTP connection
     print('Connecting to data.knmi.nl')
@@ -106,6 +106,10 @@ def download_data_pasthour(dir):
 
     # Construct a datelist for the past hour
     date_list = list(reversed([newestFileTime - datetime.timedelta(minutes=x) for x in range(0, 65, 5)]))
+
+    # We need to save the time of the first file, this will be the basetime for calculating the timeline
+    # and we need it in the local time zone!
+    baseTimeLocal = date_list[0].replace(tzinfo=to_zone).astimezone(from_zone)
 
     # Back to root dir
     ftp.cwd('/download/radar_reflectivity_composites/2.0/noversion/')
@@ -128,7 +132,7 @@ def download_data_pasthour(dir):
 
     print('Radar data downloaded')
 
-    return files
+    return files, baseTimeLocal
 
 def read_radar_data_forecast(file):
 
@@ -193,29 +197,29 @@ def read_radar_data_combined(dir, pasthour_files, forecast_file):
 
     return data
 
-def get_base_time(file):
-
-    # Get current time and convert to proper format
-    currentTime = datetime.datetime.now()
-    currentYear = currentTime.strftime('%Y')
-    currentMonth = currentTime.strftime('%m')
-    currentDay = currentTime.strftime('%d')
-
-    # Convert time to local timezone
-    startTime = file.split('_')[-1][0:4]
-    from_zone = tz.tzutc()
-    to_zone = tz.tzlocal()
-
-    utc = datetime.datetime(int(currentYear), int(currentMonth), int(currentDay), int(startTime[0:2]),
-                            int(startTime[2:4]))
-    utc = utc.replace(tzinfo=from_zone)
-
-    # Convert time zone
-    localTime = utc.astimezone(to_zone)
-
-    print('Retrieved base time: {}'.format(localTime))
-
-    return localTime
+# def get_base_time(file):
+#
+#     # Get current time and convert to proper format
+#     currentTime = datetime.datetime.now()
+#     currentYear = currentTime.strftime('%Y')
+#     currentMonth = currentTime.strftime('%m')
+#     currentDay = currentTime.strftime('%d')
+#
+#     # Convert time to local timezone
+#     startTime = file.split('_')[-1][0:4]
+#     from_zone = tz.tzutc()
+#     to_zone = tz.tzlocal()
+#
+#     utc = datetime.datetime(int(currentYear), int(currentMonth), int(currentDay), int(startTime[0:2]),
+#                             int(startTime[2:4]))
+#     utc = utc.replace(tzinfo=from_zone)
+#
+#     # Convert time zone
+#     localTime = utc.astimezone(to_zone)
+#
+#     print('Retrieved base time: {}'.format(localTime))
+#
+#     return localTime
 
 def get_projection_transform(file):
 
@@ -327,13 +331,13 @@ def main():
     forecast_file = download_data_forecast(radar_dir)
 
     # Download past hour radar data
-    radar_files = download_data_pasthour(radar_dir)
+    radar_files, localTime = download_data_pasthour(radar_dir)
 
     # Extract the data
     radar_data = read_radar_data_combined(radar_dir, radar_files, forecast_file)
 
-    # Get base time
-    localTime = get_base_time(radar_files[0])
+    # Get base time -> doesn't work!
+    # localTime = get_base_time(radar_files[0])
 
     # Get projection
     transform, crs = get_projection_transform(os.path.join(radar_dir, radar_files[0]))
