@@ -10,6 +10,7 @@ import urllib
 from dateutil import tz
 import subprocess
 import rasterio
+from concurrent import futures
 
 def download_data_forecast(dir):
     # Get current time and convert to proper format
@@ -214,6 +215,16 @@ def reproject(infile, outfile):
     subprocess.call(
         'gdalwarp -t_srs EPSG:3857 -tr 750 750 -r BILINEAR {} {}'.format(infile,outfile), shell=True)
 
+def toPNG_single(infile, outPattern, base_time, colorRamp, band, bands):
+
+    print('Image: {}/{}'.format(band + 1, bands))
+    currentTime = (base_time + datetime.timedelta(minutes=5 * band)).strftime('%y%m%d%H%M')
+    subprocess.call('gdaldem color-relief -of png -b {} -alpha {} {} {}'.format(str(band + 1),
+                                                                                infile,
+                                                                                colorRamp,
+                                                                                os.path.join(os.path.dirname(infile),
+                                                                                             outPattern + currentTime + '.png')),
+                    shell=True)
 
 def toPNG(infile, outPattern, base_time, colorRamp):
 
@@ -223,14 +234,9 @@ def toPNG(infile, outPattern, base_time, colorRamp):
 
     print('Converting to PNGs ...')
     with rasterio.open(infile) as src: bands = src.count
-    for band in range(bands):
-        print('Image: {}/{}'.format(band + 1, bands))
-        currentTime = (base_time + datetime.timedelta(minutes=5 * band)).strftime('%y%m%d%H%M')
-        subprocess.call('gdaldem color-relief -of png -b {} -alpha {} {} {}'.format(str(band + 1),
-                                                                                    infile,
-                                                                                    colorRamp,
-                                                                                    os.path.join(os.path.dirname(infile), outPattern + currentTime + '.png')),
-                        shell=True)
+
+    with futures.ThreadPoolExecutor(max_workers=4) as executor:
+        tasks = dict((executor.submit(toPNG_single, infile, outPattern, base_time, colorRamp, band, bands), band) for band in bands)
 
     aux_files = glob.glob(os.path.join(os.path.dirname(infile), 'radar*.xml'))
     for f in aux_files: os.remove(f)
@@ -351,6 +357,8 @@ def check_new_imagery(old_file):
 
         # Check if forecast file is from same time
         if os.path.splitext(analysis_file)[0][-4:] == os.path.splitext(forecast_file)[0][-4:]:
+            print('New imagery found: {}'.format(analysis_file))
+            print('Processing chain starts ...')
             return True
         else:
             print('forecast file is not in sync with analysis file!')
@@ -369,9 +377,7 @@ def main():
     run_required = check_new_imagery(old_file)
 
     # If new imagery available, run processing chain
-    if run_required:
-        print('New imagery found -> processing chain starts ...')
-        renew_radar(radar_dir, last_processed)
+    if run_required: renew_radar(radar_dir, last_processed)
     else:
         print('No new imagery found -> exiting')
 
