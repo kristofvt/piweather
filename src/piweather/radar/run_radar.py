@@ -192,7 +192,7 @@ def read_radar_data_combined(dir, pasthour_files, forecast_file):
     print('Rescaling data ...')
     data[data == 255] = 0
     data = 0.5 * data - 32
-    data[data < 10] = 0
+    data[data < 5] = 0
     data = data.astype(np.uint8)
 
     return data
