@@ -276,6 +276,10 @@ def renew_radar(radar_dir, last_processed):
     # Download past hour radar data
     radar_files, localTime = download_data_pasthour(radar_dir)
 
+    # Write the processed file to text file soon enough so new instance of script does not run
+    if os.path.exists(last_processed): os.remove(last_processed)
+    with open(last_processed, 'w') as file: file.write(radar_files[-1])
+
     # Extract the data
     radar_data = read_radar_data(radar_dir, radar_files, forecast_file)
 
@@ -296,11 +300,6 @@ def renew_radar(radar_dir, last_processed):
     # Upload to server
     images = glob.glob(os.path.join(radar_dir, 'radar*.png'))
     upload_images(images)
-
-    # Write the processed file to text file
-    if os.path.exists(last_processed): os.remove(last_processed)
-    with open(last_processed, 'w') as file: file.write(radar_files[-1])
-
 
 def check_new_imagery(old_file):
 
