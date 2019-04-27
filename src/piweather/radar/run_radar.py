@@ -274,7 +274,8 @@ def reproject(infile, outfile):
 
     print('Reprojecting to WGS84 ...')
     subprocess.call(
-        'gdalwarp -t_srs EPSG:4326 -tr 0.005 0.005 -r BILINEAR {} {}'.format(infile,outfile), shell=True)
+        'gdalwarp -t_srs EPSG:3857 -tr 750 750 -r BILINEAR -te 0.0064895 48.8965625 10.8526692 55.9691985 {} {}'.format(infile,outfile), shell=True)
+
 
 def toPNG(infile, outPattern, base_time, colorRamp):
 
