@@ -195,6 +195,11 @@ def read_radar_data_combined(dir, pasthour_files, forecast_file):
     data[data < 5] = 0
     data = data.astype(np.uint8)
 
+    print('Perform pretty simple noise filtering ...')
+    sumValid = np.sum(data != 0, axis=2)
+    idxNoise = np.where(sumValid == 1) # Only once in the time series, there is a signal -> likely noise
+    data[idxNoise[0], idxNoise[1], :] = 0
+
     return data
 
 # def get_base_time(file):
