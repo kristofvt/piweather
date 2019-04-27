@@ -272,9 +272,9 @@ def reproject(infile, outfile):
 
     if os.path.exists(outfile): os.remove(outfile)
 
-    print('Reprojecting to WGS84 ...')
+    print('Reprojecting to EPSG:3857 ...')
     subprocess.call(
-        'gdalwarp -t_srs EPSG:3857 -tr 750 750 -r BILINEAR -te 0.0064895 48.8965625 10.8526692 55.9691985 {} {}'.format(infile,outfile), shell=True)
+        'gdalwarp -t_srs EPSG:3857 -tr 750 750 -r BILINEAR {} {}'.format(infile,outfile), shell=True)
 
 
 def toPNG(infile, outPattern, base_time, colorRamp):
@@ -351,13 +351,13 @@ def main():
     # Write 2 tif
     write2tif(radar_data, outTif, transform, crs)
 
-    # Reproject to WGS84
-    projectedTif = os.path.splitext(outTif)[0] + '_EPSG4326.tif'
+    # Reproject to EPSG3857
+    projectedTif = os.path.splitext(outTif)[0] + '_EPSG3857.tif'
     reproject(outTif, projectedTif)
 
     # Export to PNGs
     colorRamp = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'radarcolors.txt')
-    toPNG(projectedTif, 'radardataEPSG4326_', localTime, colorRamp)
+    toPNG(projectedTif, 'radardataEPSG3857_', localTime, colorRamp)
 
     # Upload to server
     images = glob.glob(os.path.join(radar_dir, 'radar*.png'))
