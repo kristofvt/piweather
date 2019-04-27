@@ -134,45 +134,7 @@ def download_data_pasthour(dir):
 
     return files, baseTimeLocal
 
-def read_radar_data_forecast(file):
-
-    # Open the radar file
-    f = h5py.File(file, 'r+')
-
-    print('Reading data from hdf5 file ...')
-
-    data = np.zeros((765, 700, 13), dtype=np.uint8)
-    for t in range(13):
-        data[:, :, t] = np.array(f['image' + str(t + 1)]['image_data'])
-
-    print('Rescaling data ...')
-    data[data == 255] = 0
-    data = 0.5 * data - 32
-    data[data < 10] = 0
-    data = data.astype(np.uint8)
-
-    return data
-
-def read_radar_data_pasthour(dir, files):
-
-    print('Reading data from hdf5 file ...')
-
-    data = np.zeros((765, 700, 13), dtype=np.uint8)
-    for t in range(13):
-        # Open the radar file
-        f = h5py.File(os.path.join(dir, files[t]), 'r+')
-        data[:, :, t] = np.array(f['image1']['image_data'])
-
-    print('Rescaling data ...')
-    data[data == 255] = 0
-    data = 0.5 * data - 32
-    data[data < 10] = 0
-    data = data.astype(np.uint8)
-
-    return data
-
-
-def read_radar_data_combined(dir, pasthour_files, forecast_file):
+def read_radar_data(dir, pasthour_files, forecast_file):
 
     print('Reading data from hdf5 file ...')
 
@@ -201,30 +163,6 @@ def read_radar_data_combined(dir, pasthour_files, forecast_file):
     data[idxNoise[0], idxNoise[1], :] = 0
 
     return data
-
-# def get_base_time(file):
-#
-#     # Get current time and convert to proper format
-#     currentTime = datetime.datetime.now()
-#     currentYear = currentTime.strftime('%Y')
-#     currentMonth = currentTime.strftime('%m')
-#     currentDay = currentTime.strftime('%d')
-#
-#     # Convert time to local timezone
-#     startTime = file.split('_')[-1][0:4]
-#     from_zone = tz.tzutc()
-#     to_zone = tz.tzlocal()
-#
-#     utc = datetime.datetime(int(currentYear), int(currentMonth), int(currentDay), int(startTime[0:2]),
-#                             int(startTime[2:4]))
-#     utc = utc.replace(tzinfo=from_zone)
-#
-#     # Convert time zone
-#     localTime = utc.astimezone(to_zone)
-#
-#     print('Retrieved base time: {}'.format(localTime))
-#
-#     return localTime
 
 def get_projection_transform(file):
 
@@ -328,9 +266,8 @@ def upload_images(images):
     print('All files uploaded to server ...')
     ftps.quit()
 
-def main():
+def renew_radar(radar_dir, last_processed):
 
-    radar_dir = '/home/pi/radar'
     outTif = os.path.join(radar_dir, 'radar_data.tif')
 
     # Download forecast radar data
@@ -340,10 +277,7 @@ def main():
     radar_files, localTime = download_data_pasthour(radar_dir)
 
     # Extract the data
-    radar_data = read_radar_data_combined(radar_dir, radar_files, forecast_file)
-
-    # Get base time -> doesn't work!
-    # localTime = get_base_time(radar_files[0])
+    radar_data = read_radar_data(radar_dir, radar_files, forecast_file)
 
     # Get projection
     transform, crs = get_projection_transform(os.path.join(radar_dir, radar_files[0]))
@@ -362,6 +296,85 @@ def main():
     # Upload to server
     images = glob.glob(os.path.join(radar_dir, 'radar*.png'))
     upload_images(images)
+
+    # Write the processed file to text file
+    if os.path.exists(last_processed): os.remove(last_processed)
+    with open(last_processed, 'w') as file: file.write(radar_files[-1])
+
+
+def check_new_imagery(old_file):
+
+    # Get current time and convert to proper format
+    currentTime = datetime.datetime.now()
+    currentYear = currentTime.strftime('%Y')
+    currentMonth = currentTime.strftime('%m')
+    currentDay = currentTime.strftime('%d')
+
+    # Convert time to UTC timezone
+    startTime = currentTime.strftime('%H%M')
+    from_zone = tz.tzlocal()
+    to_zone = tz.tzutc()
+
+    utc = datetime.datetime(int(currentYear), int(currentMonth), int(currentDay), int(startTime[0:2]),
+                            int(startTime[2:4]))
+    utc = utc.replace(tzinfo=from_zone)
+
+    # Convert time zone
+    utcTime = utc.astimezone(to_zone)
+
+    print('Retrieved UTC time: {}'.format(utcTime))
+
+    currentYear = utcTime.strftime('%Y')
+    currentMonth = utcTime.strftime('%m')
+    currentDay = utcTime.strftime('%d')
+
+    # FTP connection
+    print('Connecting to data.knmi.nl')
+    ftp = FTP('data.knmi.nl')
+    ftp.login()
+    print('Checking newest file ...')
+    ftp.cwd(
+        '/download/radar_reflectivity_composites/2.0/noversion/' + currentYear + '/' + currentMonth + '/' + currentDay)
+    files = sorted(ftp.nlst())
+
+    # Get the most recent file
+    analysis_file = files[-1]
+
+    # Check if we have processed this file already
+    if analysis_file == old_file: return False
+    else:
+        # There's a new file, but first check if forecast file is ALSO available
+        ftp.cwd('/download/radar_forecast/1.0/noversion/' + currentYear + '/' + currentMonth + '/' + currentDay)
+        files = sorted(ftp.nlst())
+
+        # Get the latest radar file
+        forecast_file = files[-1]
+
+        # Check if forecast file is from same time
+        if os.path.splitext(analysis_file)[0][-4:] == os.path.splitext(forecast_file)[0][-4:]:
+            return True
+        else:
+            print('forecast file is not in sync with analysis file!')
+            return False
+
+def main():
+
+    radar_dir = '/home/pi/radar'
+    last_processed = os.path.join(radar_dir, 'last_processed.txt')
+    if not os.path.exists(last_processed): open(last_processed, 'w+').close()
+
+    # Get last processed file
+    with open(last_processed, 'r') as file: old_file = file.read()
+
+    # Check if new imagery is available
+    run_required = check_new_imagery(old_file)
+
+    # If new imagery available, run processing chain
+    if run_required:
+        print('New imagery found -> processing chain starts ...')
+        renew_radar(radar_dir, last_processed)
+    else:
+        print('No new imagery found -> exiting')
 
 def plotColorbar():
     print('Creating color palette')
@@ -414,7 +427,7 @@ def plotColorbar():
     from matplotlib import pyplot as plt
     import matplotlib as mpl
     fig = plt.figure(figsize=(25, 20))
-    fig.patch.set_facecolor('black')
+    fig.patch.set_facecolor([0.5, 0.5, 0.5])
     ax = plt.gca()
     ax.spines['bottom'].set_color('white')
     ax.spines['top'].set_color('white')
