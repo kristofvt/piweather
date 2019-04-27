@@ -149,7 +149,7 @@ def read_radar_data(dir, pasthour_files, forecast_file):
     # Open the radar file
     f = h5py.File(forecast_file, 'r+')
     for t in range(6):
-        data[:, :, t+13] = np.array(f['image' + str(t+3)]['image_data']) # First image discarded
+        data[:, :, t+13] = np.array(f['image' + str(t+2)]['image_data']) # First image discarded
 
     print('Rescaling data ...')
     data[data == 255] = 0
